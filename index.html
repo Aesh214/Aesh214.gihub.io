@@ -328,11 +328,18 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     }
 
 });
+supabaseClient.auth.getSession().then(({ data, error }) => {
 
-if (window.location.hash.includes("access_token")) {
-    resetPasswordSection.style.display = "block";
-}
+    if (error) {
+        resetMessage.textContent = error.message;
+        return;
+    }
 
+    if (data.session) {
+        resetPasswordSection.style.display = "block";
+    }
+
+});
 updatePasswordButton.addEventListener("click", async function () {
 
     const password = newPassword.value;
