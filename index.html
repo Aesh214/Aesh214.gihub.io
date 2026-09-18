@@ -323,6 +323,8 @@ const resetMessage = document.getElementById("reset-message");
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
 
+    console.log("AUTH EVENT:", event, session);
+
     if (event === "PASSWORD_RECOVERY") {
         resetPasswordSection.style.display = "block";
     }
