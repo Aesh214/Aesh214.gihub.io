@@ -329,6 +329,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
 });
 
+if (window.location.hash.includes("access_token")) {
+    resetPasswordSection.style.display = "block";
+}
+
 updatePasswordButton.addEventListener("click", async function () {
 
     const password = newPassword.value;
