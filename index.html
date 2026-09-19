@@ -446,57 +446,90 @@ heroImage.src = image.src;
     const fileInput = document.getElementById("portfolio-files");
     const filePreview = document.getElementById("file-preview");
 
-    fileInput.addEventListener("change", function () {
+    fileInput.addEventListener("change", async function () {
 
-        const files = Array.from(fileInput.files);
+    const files = Array.from(fileInput.files);
 
-        files.forEach(function (file) {
-const transaction = portfolioDB.result.transaction(["files"], "readwrite");
-const store = transaction.objectStore("files");
+    for (const file of files) {
 
-store.add({
-    name: file.name,
-    type: file.type,
-    file: file
-});
-            const fileItem = document.createElement("div");
-            fileItem.className = "file-item";
+        // Save the file locally as before
+        const transaction = portfolioDB.result.transaction(["files"], "readwrite");
+        const store = transaction.objectStore("files");
 
-            if (file.type.startsWith("image/")) {
-
-                const image = document.createElement("img");
-                image.src = URL.createObjectURL(file);
-
-                fileItem.appendChild(image);
-            }
-
-            const fileName = document.createElement("p");
-fileName.textContent = file.name;
-
-const viewButton = document.createElement("a");
-viewButton.textContent = "👁️ View File";
-viewButton.className = "portfolio-button";
-viewButton.href = URL.createObjectURL(file);
-viewButton.target = "_blank";
-
-fileItem.appendChild(viewButton);
-
-const deleteButton = document.createElement("button");
-            deleteButton.textContent = "🗑️ Delete";
-            deleteButton.className = "delete-button";
-
-            deleteButton.addEventListener("click", function () {
-                fileItem.remove();
-            });
-
-            fileItem.appendChild(fileName);
-            fileItem.appendChild(deleteButton);
-
-            filePreview.appendChild(fileItem);
+        store.add({
+            name: file.name,
+            type: file.type,
+            file: file
         });
 
-        fileInput.value = "";
-    });
+        // Upload the file to Supabase Storage
+        const filePath =
+            "portfolio/" +
+            Date.now() +
+            "-" +
+            file.name;
+
+        const { data, error } = await supabaseClient.storage
+            .from("portfolio-files")
+            .upload(filePath, file, {
+                cacheControl: "3600",
+                upsert: false
+            });
+
+        if (error) {
+
+            console.error("Supabase upload error:", error);
+
+            alert(
+                "The file appeared on the website, but it could not be uploaded to Supabase. " +
+                error.message
+            );
+
+        } else {
+
+            console.log("File uploaded to Supabase:", data);
+
+        }
+
+        // Show the file on the website
+        const fileItem = document.createElement("div");
+        fileItem.className = "file-item";
+
+        if (file.type.startsWith("image/")) {
+
+            const image = document.createElement("img");
+            image.src = URL.createObjectURL(file);
+
+            fileItem.appendChild(image);
+        }
+
+        const fileName = document.createElement("p");
+        fileName.textContent = file.name;
+
+        const viewButton = document.createElement("a");
+        viewButton.textContent = "👁️ View File";
+        viewButton.className = "portfolio-button";
+        viewButton.href = URL.createObjectURL(file);
+        viewButton.target = "_blank";
+
+        fileItem.appendChild(viewButton);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "🗑️ Delete";
+        deleteButton.className = "delete-button";
+
+        deleteButton.addEventListener("click", function () {
+            fileItem.remove();
+        });
+
+        fileItem.appendChild(fileName);
+        fileItem.appendChild(deleteButton);
+
+        filePreview.appendChild(fileItem);
+    }
+
+    fileInput.value = "";
+});
     const portfolioDB = indexedDB.open("AyshaPortfolio", 1);
 
 portfolioDB.onupgradeneeded = function (event) {
