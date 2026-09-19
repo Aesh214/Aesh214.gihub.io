@@ -454,20 +454,21 @@ heroImage.src = image.src;
 
         // Save the file locally as before
         const transaction = portfolioDB.result.transaction(["files"], "readwrite");
-        const store = transaction.objectStore("files");
+const store = transaction.objectStore("files");
 
-        store.add({
-            name: file.name,
-            type: file.type,
-            file: file
-        });
+// Upload path for Supabase
+const filePath =
+    "portfolio/" +
+    Date.now() +
+    "-" +
+    file.name;
 
-        // Upload the file to Supabase Storage
-        const filePath =
-            "portfolio/" +
-            Date.now() +
-            "-" +
-            file.name;
+store.add({
+    name: file.name,
+    type: file.type,
+    file: file,
+    supabasePath: filePath
+});
 
         const { data, error } = await supabaseClient.storage
             .from("portfolio-files")
@@ -517,10 +518,35 @@ heroImage.src = image.src;
         const deleteButton = document.createElement("button");
         deleteButton.textContent = "🗑️ Delete";
         deleteButton.className = "delete-button";
+fileItem.dataset.supabasePath = filePath;
+        deleteButton.addEventListener("click", async function () {
 
-        deleteButton.addEventListener("click", function () {
-            fileItem.remove();
-        });
+    // Delete from Supabase Storage
+    if (savedFile.supabasePath) {
+
+        const { error } = await supabaseClient.storage
+            .from("portfolio-files")
+            .remove([savedFile.supabasePath]);
+
+        if (error) {
+            console.error("Supabase delete error:", error);
+            alert("The file could not be deleted from Supabase.");
+            return;
+        }
+    }
+
+    // Delete from local browser storage
+    const deleteTransaction =
+        portfolioDB.result.transaction(["files"], "readwrite");
+
+    const deleteStore =
+        deleteTransaction.objectStore("files");
+
+    deleteStore.delete(savedFile.id);
+
+    // Remove from the page
+    fileItem.remove();
+});
 
         fileItem.appendChild(fileName);
         fileItem.appendChild(deleteButton);
